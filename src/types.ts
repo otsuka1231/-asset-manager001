@@ -55,6 +55,7 @@ export interface Snapshot {
   id: string;
   date: string; // ISO date string (YYYY-MM-DD)
   balances: BalanceEntry[];
+  savedAt?: number; // epoch ms when the snapshot was saved
 }
 
 export interface GoalConfig {

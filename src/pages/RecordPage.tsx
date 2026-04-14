@@ -44,7 +44,14 @@ export default function RecordPage({ accounts, onSaved }: Props) {
       }
       const snapshots = await getSnapshots();
       if (snapshots.length === 0) { setLoaded(true); return; }
-      const latest = snapshots[snapshots.length - 1];
+      // Use the most recently SAVED snapshot (not latest by date).
+      // Fall back to date for legacy snapshots that lack savedAt.
+      const latest = [...snapshots].sort((a, b) => {
+        const sa = a.savedAt ?? 0;
+        const sb = b.savedAt ?? 0;
+        if (sa !== sb) return sb - sa;
+        return b.date.localeCompare(a.date);
+      })[0];
       const defaults: Record<string, number> = {};
       for (const b of latest.balances) {
         const key = b.holdingId ? `${b.accountId}:${b.holdingId}` : b.accountId;
@@ -83,6 +90,7 @@ export default function RecordPage({ accounts, onSaved }: Props) {
       id: Math.random().toString(36).slice(2) + Date.now().toString(36),
       date,
       balances: entries,
+      savedAt: Date.now(),
     };
     await saveSnapshot(snapshot);
     clearDraft();
