@@ -44,7 +44,7 @@ export default function App() {
         {tab === "dashboard" && <DashboardPage accounts={accounts} snapshots={snapshots} goal={goal} />}
         {tab === "record" && <RecordPage accounts={accounts} onSaved={() => { reload(); changeTab("dashboard"); }} />}
         {tab === "accounts" && <AccountsPage accounts={accounts} onChanged={reload} />}
-        {tab === "settings" && <SettingsPage goal={goal} onChanged={reload} />}
+        {tab === "settings" && <SettingsPage goal={goal} snapshots={snapshots} onChanged={reload} />}
       </main>
 
       <nav className="tab-bar">

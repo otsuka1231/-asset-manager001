@@ -1,13 +1,14 @@
 import { useState } from "react";
-import type { GoalConfig } from "../types";
-import { saveGoal, exportAll, importAll } from "../db";
+import type { GoalConfig, Snapshot } from "../types";
+import { saveGoal, exportAll, importAll, deleteSnapshot } from "../db";
 
 interface Props {
   goal: GoalConfig;
+  snapshots: Snapshot[];
   onChanged: () => void;
 }
 
-export default function SettingsPage({ goal, onChanged }: Props) {
+export default function SettingsPage({ goal, snapshots, onChanged }: Props) {
   const [form, setForm] = useState<GoalConfig>(goal);
   const [saved, setSaved] = useState(false);
 
@@ -27,6 +28,12 @@ export default function SettingsPage({ goal, onChanged }: Props) {
     a.download = `asset-manager-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDeleteSnapshot = async (s: Snapshot) => {
+    if (!confirm(`${s.date} の記録を削除します。よろしいですか？`)) return;
+    await deleteSnapshot(s.id);
+    onChanged();
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +80,31 @@ export default function SettingsPage({ goal, onChanged }: Props) {
       <button className="btn-primary full-width" onClick={handleSaveGoal}>
         {saved ? "保存しました！" : "目標を保存"}
       </button>
+
+      <hr className="divider" />
+
+      <h2>記録履歴</h2>
+      <p className="help-text">誤って登録した記録を削除できます。</p>
+      {snapshots.length === 0 ? (
+        <p className="empty-text">記録がありません。</p>
+      ) : (
+        <ul className="snapshot-list">
+          {[...snapshots].reverse().map((s) => {
+            const total = s.balances.reduce((sum, b) => sum + (b.amount || 0), 0);
+            return (
+              <li key={s.id} className="snapshot-row">
+                <div className="snapshot-info">
+                  <span className="snapshot-date">{s.date}</span>
+                  <span className="snapshot-total">合計 {total.toLocaleString()} 円</span>
+                </div>
+                <button className="btn-danger" onClick={() => handleDeleteSnapshot(s)}>
+                  削除
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <hr className="divider" />
 
