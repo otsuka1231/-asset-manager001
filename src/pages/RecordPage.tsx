@@ -9,17 +9,27 @@ interface Props {
   onSaved: () => void;
 }
 
-function loadDraft(): { balances: Record<string, number>; date: string } | null {
+function todayLocal(): string {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function loadDraft(): { balances: Record<string, number> } | null {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed.balances ? { balances: parsed.balances } : null;
   } catch {
     return null;
   }
 }
 
-function saveDraft(balances: Record<string, number>, date: string) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ balances, date }));
+function saveDraft(balances: Record<string, number>) {
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ balances }));
 }
 
 function clearDraft() {
@@ -29,7 +39,7 @@ function clearDraft() {
 export default function RecordPage({ accounts, onSaved }: Props) {
   const [balances, setBalances] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
-  const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(() => todayLocal());
   const [loaded, setLoaded] = useState(false);
 
   // Load: draft first, then fall back to latest snapshot
@@ -38,7 +48,6 @@ export default function RecordPage({ accounts, onSaved }: Props) {
       const draft = loadDraft();
       if (draft) {
         setBalances(draft.balances);
-        setDate(draft.date);
         setLoaded(true);
         return;
       }
@@ -62,10 +71,10 @@ export default function RecordPage({ accounts, onSaved }: Props) {
     })();
   }, []);
 
-  // Auto-save draft on every change
+  // Auto-save draft on every change (balances only; date always follows today)
   useEffect(() => {
-    if (loaded) saveDraft(balances, date);
-  }, [balances, date, loaded]);
+    if (loaded) saveDraft(balances);
+  }, [balances, loaded]);
 
   const updateBalance = (key: string, value: string) => {
     const num = value === "" ? 0 : parseInt(value.replace(/,/g, ""), 10) || 0;

@@ -3,6 +3,10 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  background: #ffffff;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
