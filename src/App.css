@@ -27,14 +27,15 @@ html, body {
 }
 
 .app-header {
-  position: relative;
+  position: sticky;
+  top: 0;
   background: linear-gradient(135deg, #a99cd6, #ecadc8);
   color: white;
   padding: 14px 20px;
   padding-top: calc(env(safe-area-inset-top, 0px) + 14px);
   text-align: center;
   flex: 0 0 auto;
-  z-index: 10;
+  z-index: 40;
 }
 
 .app-header h1 {

@@ -40,12 +40,12 @@ export default function SettingsPage({ snapshots, onChanged }: Props) {
   return (
     <div className="page">
       <h2><img className="mini-mascot" src="nyasper/lolli.png" alt="" aria-hidden="true" />記録履歴</h2>
-      <p className="help-text">誤って登録した記録を削除できます。</p>
+      <p className="help-text">直近5件を表示しています。誤って登録した記録を削除できます。</p>
       {snapshots.length === 0 ? (
         <p className="empty-text">記録がありません。</p>
       ) : (
         <ul className="snapshot-list">
-          {[...snapshots].reverse().map((s) => {
+          {[...snapshots].reverse().slice(0, 5).map((s) => {
             const total = s.balances.reduce((sum, b) => sum + (b.amount || 0), 0);
             return (
               <li key={s.id} className="snapshot-row">
