@@ -676,21 +676,6 @@ html, body {
   margin: 4px 0;
 }
 
-/* Chart mascot — sits beside the title, never over the plot */
-.chart-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.chart-mascot {
-  height: 40px;
-  width: auto;
-  margin-right: 2px;
-  pointer-events: none;
-  filter: drop-shadow(0 2px 3px rgba(120, 100, 160, 0.18));
-}
-
 /* Fund combobox */
 .combo {
   position: relative;

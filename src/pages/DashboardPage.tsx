@@ -198,12 +198,9 @@ export default function DashboardPage({ accounts, snapshots }: Props) {
         </div>
       )}
 
-      {/* Chart — mascot sits beside the title, not over the plot */}
+      {/* Chart */}
       <div className="chart-section">
-        <div className="chart-head">
-          <h3>資産推移</h3>
-          <img className="chart-mascot" src="nyasper/mirror.png" alt="" aria-hidden="true" />
-        </div>
+        <h3><img className="mini-mascot" src="nyasper/mirror.png" alt="" aria-hidden="true" />資産推移</h3>
         <ResponsiveContainer width="100%" height={260}>
           <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0ecf5" />
