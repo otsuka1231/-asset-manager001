@@ -4,14 +4,14 @@
 }
 
 html {
-  background: #ffffff;
+  background: #f6f0fa;
 }
 
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Segoe UI", sans-serif;
-  background: #f5f5f7;
-  color: #1d1d1f;
+  background: #f6f0fa;
+  color: #3f3a4d;
   -webkit-font-smoothing: antialiased;
 }
 

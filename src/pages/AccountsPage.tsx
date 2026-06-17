@@ -1,14 +1,13 @@
 import { useState } from "react";
-import type { Account, Holding, AssetCategory, LiabilityCategory } from "../types";
-import { ASSET_CATEGORY_LABELS, LIABILITY_CATEGORY_LABELS, KNOWN_RETURNS, RETURN_CATEGORIES } from "../types";
+import type { Account, Holding, AssetCategory, LiabilityCategory, Owner } from "../types";
+import { ASSET_CATEGORY_LABELS, LIABILITY_CATEGORY_LABELS, OWNER_LABELS, ownerOf } from "../types";
 import { saveAccount, deleteAccount } from "../db";
+import FundCombobox from "../components/FundCombobox";
 
 interface Props {
   accounts: Account[];
   onChanged: () => void;
 }
-
-const EMPTY_HOLDING: Holding = { id: "", name: "", expectedAnnualReturn: 0.08 };
 
 export default function AccountsPage({ accounts, onChanged }: Props) {
   const [editing, setEditing] = useState<Account | null>(null);
@@ -23,13 +22,14 @@ export default function AccountsPage({ accounts, onChanged }: Props) {
       name: "",
       type,
       category: type === "asset" ? "bank" : "housing_loan",
+      owner: "self",
       holdings: [],
     });
     setShowForm(true);
   };
 
   const startEdit = (account: Account) => {
-    setEditing({ ...account, holdings: account.holdings ? [...account.holdings] : [] });
+    setEditing({ ...account, owner: ownerOf(account), holdings: account.holdings ? [...account.holdings] : [] });
     setShowForm(true);
   };
 
@@ -53,20 +53,14 @@ export default function AccountsPage({ accounts, onChanged }: Props) {
 
   const addHolding = () => {
     if (!editing) return;
-    const h: Holding = { ...EMPTY_HOLDING, id: Math.random().toString(36).slice(2) + Date.now().toString(36) };
+    const h: Holding = { id: Math.random().toString(36).slice(2) + Date.now().toString(36), name: "" };
     setEditing({ ...editing, holdings: [...(editing.holdings || []), h] });
   };
 
-  const updateHolding = (idx: number, field: keyof Holding, value: string | number) => {
+  const updateHolding = (idx: number, name: string) => {
     if (!editing?.holdings) return;
     const updated = [...editing.holdings];
-    if (field === "name") {
-      updated[idx] = { ...updated[idx], name: value as string };
-      const known = KNOWN_RETURNS[value as string];
-      if (known) updated[idx].expectedAnnualReturn = known;
-    } else if (field === "expectedAnnualReturn") {
-      updated[idx] = { ...updated[idx], expectedAnnualReturn: value as number };
-    }
+    updated[idx] = { ...updated[idx], name };
     setEditing({ ...editing, holdings: updated });
   };
 
@@ -89,6 +83,23 @@ export default function AccountsPage({ accounts, onChanged }: Props) {
             onChange={(e) => setEditing({ ...editing, name: e.target.value })}
           />
         </div>
+
+        <div className="form-group">
+          <label>名義</label>
+          <div className="owner-toggle">
+            {(Object.keys(OWNER_LABELS) as Owner[]).map((o) => (
+              <button
+                key={o}
+                type="button"
+                className={ownerOf(editing) === o ? "active" : ""}
+                onClick={() => setEditing({ ...editing, owner: o })}
+              >
+                {OWNER_LABELS[o]}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="form-group">
           <label>カテゴリ</label>
           <select
@@ -110,43 +121,11 @@ export default function AccountsPage({ accounts, onChanged }: Props) {
             <h3>保有銘柄</h3>
             {editing.holdings?.map((h, idx) => (
               <div key={h.id || idx} className="holding-row">
-                <input
-                  type="text"
-                  placeholder="銘柄名 (例: SP500)"
-                  value={h.name}
-                  onChange={(e) => updateHolding(idx, "name", e.target.value)}
-                />
-                <div className="return-input">
-                  <label>想定年利</label>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="10"
-                    defaultValue={(h.expectedAnnualReturn * 100).toString()}
-                    onBlur={(e) => updateHolding(idx, "expectedAnnualReturn", parseFloat(e.target.value) / 100 || 0)}
-                  />
-                  <span>%</span>
-                </div>
+                <FundCombobox value={h.name} onChange={(v) => updateHolding(idx, v)} />
                 <button className="btn-icon" onClick={() => removeHolding(idx)}>✕</button>
               </div>
             ))}
             <button className="btn-secondary" onClick={addHolding}>+ 銘柄を追加</button>
-          </div>
-        )}
-
-        {RETURN_CATEGORIES.includes(editing.category as AssetCategory) && (
-          <div className="form-group">
-            <label>想定年利</label>
-            <div className="return-input">
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="6"
-                defaultValue={editing.expectedAnnualReturn ? (editing.expectedAnnualReturn * 100).toString() : ""}
-                onBlur={(e) => setEditing({ ...editing, expectedAnnualReturn: parseFloat(e.target.value) / 100 || 0 })}
-              />
-              <span>%</span>
-            </div>
           </div>
         )}
 
@@ -158,36 +137,36 @@ export default function AccountsPage({ accounts, onChanged }: Props) {
     );
   }
 
+  const renderCard = (a: Account, sub: string) => (
+    <div key={a.id} className="account-card" onClick={() => startEdit(a)}>
+      <div className="account-info">
+        <span className="account-name">
+          {a.name}
+          {ownerOf(a) === "shared" && <span className="owner-badge">{OWNER_LABELS.shared}</span>}
+        </span>
+        <span className="account-category">{sub}</span>
+      </div>
+      <button className="btn-icon danger" onClick={(e) => { e.stopPropagation(); handleDelete(a.id); }}>✕</button>
+    </div>
+  );
+
   return (
     <div className="page">
       <section>
         <h2>資産口座</h2>
-        {assets.map((a) => (
-          <div key={a.id} className="account-card" onClick={() => startEdit(a)}>
-            <div className="account-info">
-              <span className="account-name">{a.name}</span>
-              <span className="account-category">
-                {ASSET_CATEGORY_LABELS[a.category as AssetCategory]}
-                {a.holdings && a.holdings.length > 0 && ` (${a.holdings.map((h) => h.name).join(", ")})`}
-              </span>
-            </div>
-            <button className="btn-icon danger" onClick={(e) => { e.stopPropagation(); handleDelete(a.id); }}>✕</button>
-          </div>
-        ))}
+        {assets.map((a) =>
+          renderCard(
+            a,
+            ASSET_CATEGORY_LABELS[a.category as AssetCategory] +
+              (a.holdings && a.holdings.length > 0 ? ` (${a.holdings.map((h) => h.name).join(", ")})` : "")
+          )
+        )}
         <button className="btn-add" onClick={() => startNew("asset")}>＋ 資産口座を追加</button>
       </section>
 
       <section>
         <h2>負債</h2>
-        {liabilities.map((a) => (
-          <div key={a.id} className="account-card" onClick={() => startEdit(a)}>
-            <div className="account-info">
-              <span className="account-name">{a.name}</span>
-              <span className="account-category">{LIABILITY_CATEGORY_LABELS[a.category as LiabilityCategory]}</span>
-            </div>
-            <button className="btn-icon danger" onClick={(e) => { e.stopPropagation(); handleDelete(a.id); }}>✕</button>
-          </div>
-        ))}
+        {liabilities.map((a) => renderCard(a, LIABILITY_CATEGORY_LABELS[a.category as LiabilityCategory]))}
         <button className="btn-add" onClick={() => startNew("liability")}>＋ 負債を追加</button>
       </section>
     </div>

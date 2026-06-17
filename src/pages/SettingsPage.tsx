@@ -1,24 +1,12 @@
-import { useState } from "react";
-import type { GoalConfig, Snapshot } from "../types";
-import { saveGoal, exportAll, importAll, deleteSnapshot } from "../db";
+import type { Snapshot } from "../types";
+import { exportAll, importAll, deleteSnapshot } from "../db";
 
 interface Props {
-  goal: GoalConfig;
   snapshots: Snapshot[];
   onChanged: () => void;
 }
 
-export default function SettingsPage({ goal, snapshots, onChanged }: Props) {
-  const [form, setForm] = useState<GoalConfig>(goal);
-  const [saved, setSaved] = useState(false);
-
-  const handleSaveGoal = async () => {
-    await saveGoal(form);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    onChanged();
-  };
-
+export default function SettingsPage({ snapshots, onChanged }: Props) {
   const handleExport = async () => {
     const json = await exportAll();
     const blob = new Blob([json], { type: "application/json" });
@@ -51,39 +39,7 @@ export default function SettingsPage({ goal, snapshots, onChanged }: Props) {
 
   return (
     <div className="page">
-      <h2>目標設定</h2>
-      <div className="form-group">
-        <label>目標金額（円）</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={form.targetAmount.toLocaleString()}
-          onChange={(e) => setForm({ ...form, targetAmount: parseInt(e.target.value.replace(/,/g, ""), 10) || 0 })}
-        />
-      </div>
-      <div className="form-group">
-        <label>目標達成日</label>
-        <input
-          type="date"
-          value={form.targetDate}
-          onChange={(e) => setForm({ ...form, targetDate: e.target.value })}
-        />
-      </div>
-      <div className="form-group">
-        <label>生年月日</label>
-        <input
-          type="date"
-          value={form.birthDate}
-          onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-        />
-      </div>
-      <button className="btn-primary full-width" onClick={handleSaveGoal}>
-        {saved ? "保存しました！" : "目標を保存"}
-      </button>
-
-      <hr className="divider" />
-
-      <h2>記録履歴</h2>
+      <h2><img className="mini-mascot" src="nyasper/lolli.png" alt="" aria-hidden="true" />記録履歴</h2>
       <p className="help-text">誤って登録した記録を削除できます。</p>
       {snapshots.length === 0 ? (
         <p className="empty-text">記録がありません。</p>
@@ -108,7 +64,7 @@ export default function SettingsPage({ goal, snapshots, onChanged }: Props) {
 
       <hr className="divider" />
 
-      <h2>データ管理</h2>
+      <h2><img className="mini-mascot" src="nyasper/zen.png" alt="" aria-hidden="true" />データ管理</h2>
       <p className="help-text">バックアップのエクスポート・インポートができます。</p>
       <div className="settings-actions">
         <button className="btn-secondary" onClick={handleExport}>バックアップ保存</button>

@@ -1,5 +1,4 @@
-import type { Account, Snapshot, GoalConfig } from "./types";
-import { DEFAULT_GOAL } from "./types";
+import type { Account, Snapshot } from "./types";
 
 const DB_NAME = "asset-manager";
 const DB_VERSION = 1;
@@ -90,35 +89,13 @@ export async function deleteSnapshot(id: string): Promise<void> {
   });
 }
 
-// Goal config
-export async function getGoal(): Promise<GoalConfig> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("settings", "readonly");
-    const req = tx.objectStore("settings").get("goal");
-    req.onsuccess = () => resolve(req.result?.value ?? DEFAULT_GOAL);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export async function saveGoal(goal: GoalConfig): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction("settings", "readwrite");
-    tx.objectStore("settings").put({ key: "goal", value: goal });
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
 // Export / Import
 export async function exportAll(): Promise<string> {
-  const [accounts, snapshots, goal] = await Promise.all([
+  const [accounts, snapshots] = await Promise.all([
     getAccounts(),
     getSnapshots(),
-    getGoal(),
   ]);
-  return JSON.stringify({ accounts, snapshots, goal }, null, 2);
+  return JSON.stringify({ accounts, snapshots }, null, 2);
 }
 
 export async function importAll(json: string): Promise<void> {
@@ -126,7 +103,7 @@ export async function importAll(json: string): Promise<void> {
   const db = await openDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(["accounts", "snapshots", "settings"], "readwrite");
+    const tx = db.transaction(["accounts", "snapshots"], "readwrite");
     if (data.accounts) {
       const store = tx.objectStore("accounts");
       for (const a of data.accounts) store.put(a);
@@ -134,9 +111,6 @@ export async function importAll(json: string): Promise<void> {
     if (data.snapshots) {
       const store = tx.objectStore("snapshots");
       for (const s of data.snapshots) store.put(s);
-    }
-    if (data.goal) {
-      tx.objectStore("settings").put({ key: "goal", value: data.goal });
     }
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);

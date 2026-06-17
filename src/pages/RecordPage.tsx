@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { Account, Snapshot, BalanceEntry } from "../types";
+import { OWNER_LABELS, ownerOf } from "../types";
 import { getSnapshots, saveSnapshot } from "../db";
 
 const STORAGE_KEY = "record_draft";
@@ -112,81 +113,77 @@ export default function RecordPage({ accounts, onSaved }: Props) {
 
   const formatNum = (n: number) => n.toLocaleString();
 
+  const amountInput = (key: string) => (
+    <div className="amount-input">
+      <input
+        type="text"
+        inputMode="numeric"
+        value={balances[key] ? formatNum(balances[key]) : ""}
+        placeholder="0"
+        onChange={(e) => updateBalance(key, e.target.value)}
+      />
+      <span>円</span>
+    </div>
+  );
+
   if (accounts.length === 0) {
     return (
       <div className="page">
-        <p className="empty-text">まず「口座」タブから口座を登録してください。</p>
+        <div className="empty-state">
+          <img className="empty-mascot" src="nyasper/sit.png" alt="" />
+          <p className="empty-text">まず「口座」タブから口座を登録してください。</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="page">
-      <div className="form-group">
+      <div className="record-date">
         <label>記録日</label>
         <input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
 
-      {assets.length > 0 && <h2>資産</h2>}
-      {assets.map((account) => (
-        <div key={account.id} className="record-section">
-          <h3 className="record-account-name">{account.name}</h3>
-          {account.category === "securities" && account.holdings?.length ? (
-            account.holdings.map((h) => {
-              const key = `${account.id}:${h.id}`;
-              return (
-                <div key={h.id} className="record-row">
-                  <label>{h.name}</label>
-                  <div className="amount-input">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={balances[key] ? formatNum(balances[key]) : ""}
-                      placeholder="0"
-                      onChange={(e) => updateBalance(key, e.target.value)}
-                    />
-                    <span>円</span>
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="record-row">
-              <label>残高</label>
-              <div className="amount-input">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={balances[account.id] ? formatNum(balances[account.id]) : ""}
-                  placeholder="0"
-                  onChange={(e) => updateBalance(account.id, e.target.value)}
-                />
-                <span>円</span>
+      {assets.length > 0 && <h2 className="record-heading">資産</h2>}
+      <div className="record-list">
+        {assets.map((account) =>
+          account.category === "securities" && account.holdings?.length ? (
+            <div key={account.id} className="rec-group">
+              <div className="rec-group-head">
+                <span className="rec-name">{account.name}</span>
+                {ownerOf(account) === "shared" && <span className="owner-badge">{OWNER_LABELS.shared}</span>}
               </div>
+              {account.holdings.map((h) => (
+                <div key={h.id} className="rec-row rec-row-sub">
+                  <span className="rec-name">{h.name}</span>
+                  {amountInput(`${account.id}:${h.id}`)}
+                </div>
+              ))}
             </div>
-          )}
-        </div>
-      ))}
+          ) : (
+            <div key={account.id} className="rec-row">
+              <span className="rec-name">
+                {account.name}
+                {ownerOf(account) === "shared" && <span className="owner-badge">{OWNER_LABELS.shared}</span>}
+              </span>
+              {amountInput(account.id)}
+            </div>
+          )
+        )}
+      </div>
 
-      {liabilities.length > 0 && <h2>負債</h2>}
-      {liabilities.map((account) => (
-        <div key={account.id} className="record-section">
-          <h3 className="record-account-name">{account.name}</h3>
-          <div className="record-row">
-            <label>残高</label>
-            <div className="amount-input">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={balances[account.id] ? formatNum(balances[account.id]) : ""}
-                placeholder="0"
-                onChange={(e) => updateBalance(account.id, e.target.value)}
-              />
-              <span>円</span>
-            </div>
+      {liabilities.length > 0 && <h2 className="record-heading">負債</h2>}
+      <div className="record-list">
+        {liabilities.map((account) => (
+          <div key={account.id} className="rec-row">
+            <span className="rec-name">
+              {account.name}
+              {ownerOf(account) === "shared" && <span className="owner-badge">{OWNER_LABELS.shared}</span>}
+            </span>
+            {amountInput(account.id)}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
 
       <button className="btn-primary full-width" onClick={handleSave} disabled={saving}>
         {saving ? "保存中..." : "記録する"}
