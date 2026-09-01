@@ -62,18 +62,34 @@ export async function getSnapshots(): Promise<Snapshot[]> {
     const req = tx.objectStore("snapshots").getAll();
     req.onsuccess = () => {
       const snapshots = req.result as Snapshot[];
-      snapshots.sort((a, b) => a.date.localeCompare(b.date));
+      // Sort by date, then by save time. Without the savedAt tie-break, two
+      // records on the same date fall back to IndexedDB's key order (a random
+      // id), so the dashboard could pick the OLDER one as "latest".
+      snapshots.sort((a, b) => {
+        const d = a.date.localeCompare(b.date);
+        if (d !== 0) return d;
+        return (a.savedAt ?? 0) - (b.savedAt ?? 0);
+      });
       resolve(snapshots);
     };
     req.onerror = () => reject(req.error);
   });
 }
 
+/** Saves a snapshot, replacing any existing record for the same date so a
+ *  given day always has exactly one entry. */
 export async function saveSnapshot(snapshot: Snapshot): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction("snapshots", "readwrite");
-    tx.objectStore("snapshots").put(snapshot);
+    const store = tx.objectStore("snapshots");
+    const req = store.getAll();
+    req.onsuccess = () => {
+      for (const s of req.result as Snapshot[]) {
+        if (s.date === snapshot.date && s.id !== snapshot.id) store.delete(s.id);
+      }
+      store.put(snapshot);
+    };
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

@@ -81,7 +81,14 @@ export interface Account {
   category: AssetCategory | LiabilityCategory;
   owner?: Owner; // 本人 or 共有 (defaults to "self" for legacy data)
   holdings?: Holding[]; // only for securities
+  originalAmount?: number; // liabilities only: amount originally borrowed, for repayment progress
 }
+
+/** Categories held in cash or deposits — treated as risk-free / liquid. */
+export const SAFE_CATEGORIES: AssetCategory[] = ["cash", "bank"];
+
+/** Categories exposed to market price swings. */
+export const RISK_CATEGORIES: AssetCategory[] = ["securities", "crypto", "wealthnavi"];
 
 /** Owner of an account, defaulting legacy accounts (no owner field) to "self". */
 export function ownerOf(account: Account): Owner {

@@ -39,6 +39,9 @@ export default function AccountsPage({ accounts, onChanged }: Props) {
     if (toSave.category !== "securities") {
       delete toSave.holdings;
     }
+    if (toSave.type !== "liability") {
+      delete toSave.originalAmount;
+    }
     await saveAccount(toSave);
     setShowForm(false);
     setEditing(null);
@@ -115,6 +118,23 @@ export default function AccountsPage({ accounts, onChanged }: Props) {
                 ))}
           </select>
         </div>
+
+        {editing.type === "liability" && (
+          <div className="form-group">
+            <label>当初借入額（任意）</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="例: 40,000,000"
+              defaultValue={editing.originalAmount ? editing.originalAmount.toLocaleString() : ""}
+              onBlur={(e) => {
+                const n = parseInt(e.target.value.replace(/[^0-9]/g, ""), 10);
+                setEditing({ ...editing, originalAmount: Number.isFinite(n) && n > 0 ? n : undefined });
+              }}
+            />
+            <p className="field-hint">入力すると返済の進捗が表示されます。</p>
+          </div>
+        )}
 
         {editing.category === "securities" && (
           <div className="holdings-section">
